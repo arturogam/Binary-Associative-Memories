@@ -28,8 +28,7 @@ import scripts.memories as mm
 noise_type = "additive"
 
 # Set the number of image pixels to be distorted with noise
-noisy_pixel = 5
-
+noisy_pixel = 7
 # Set the number of trials to be used
 trials = 5
 
@@ -40,8 +39,8 @@ grid = 10
 tl.init_directories()
 
 # Generates input and output training pattern list
-list_input_pattern = tl.training_list("input")
-list_output_pattern = tl.training_list("output")
+list_input_pattern = list(tl.training_list("input"))
+list_output_pattern = list(tl.training_list("output"))
 
 # Calculates input and output image sizes
 image = Image.open(list_input_pattern[0])
@@ -56,7 +55,6 @@ matrix_output_pattern = tl.list_to_matrix(list_output_pattern)
 
 # Name of associative memories used in simulation according to noise type
 memories_to_simulate = tl.init_name_memories(noise_type)
-memories_to_simulate = ["exor_max", "exor_min"]
 
 number_of_memory = len(memories_to_simulate)
 number_of_pattern = matrix_input_pattern.shape[1]
@@ -68,33 +66,29 @@ matrix_recall_result = np.zeros((number_of_memory, 2, number_of_pattern))
 matrix_perfect_recall_pattern = np.zeros((number_of_memory, 2))
 
 for index_memory, value_memory in enumerate(memories_to_simulate):
-
     associative_memory = mm.AssociativeMemory(value_memory, matrix_output_pattern, matrix_input_pattern, size_input_pattern)
     associative_memory.learn()
 
     for t in range(trials):
         for r in range(2):
-            if r == 0:
-                matrix_test = copy.deepcopy(matrix_input_pattern)
-                value_noise = 0
-            else:
+            matrix_test = copy.deepcopy(matrix_input_pattern)
+            value_noise = 0
+            if r > 0:
                 # Generates list of noisy image paths for each trial
-                list_noise_pattern = tl.list_images_noise(list_input_pattern, noise_type, noisy_pixel)
+                list_noise_pattern = list(tl.list_images_noise(list_input_pattern, noise_type, noisy_pixel))
                 matrix_test = tl.list_to_matrix(list_noise_pattern)
                 value_noise = noisy_pixel
 
             matrix_recall = associative_memory.recall(matrix_test)
 
-            list_recall =  tl.matrix_to_list(matrix_recall, value_memory, size_output_pattern, noise_type, value_noise)
+            list_recall =  list(tl.matrix_to_list(matrix_recall, value_memory, size_output_pattern, noise_type, value_noise,"Y"))
 
-            similarity = tl.similarity_list(list_input_pattern, list_recall)
+            similarity = tl.similarity_list(list_output_pattern, list_recall)
             matrix_recall_result[index_memory][r] += similarity
             matrix_perfect_recall_pattern[index_memory][r] += np.count_nonzero(np.array(similarity) == 1)
-
-    print(value_memory)
 
 matrix_recall_result /= trials
 matrix_perfect_recall_pattern /= trials
 
-tl.create_excel(memories_to_simulate, number_of_pattern, noise_type, matrix_recall_result, matrix_perfect_recall_pattern)
+tl.create_excel(memories_to_simulate, number_of_pattern, noise_type, noisy_pixel, matrix_recall_result, matrix_perfect_recall_pattern)
 tl.convert_image_to_grid(grid, invert = True)

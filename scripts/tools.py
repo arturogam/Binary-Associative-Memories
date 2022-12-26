@@ -187,7 +187,7 @@ def list_to_matrix(list_images):
 
     return matrix
 
-def matrix_to_list(matrix, label_name, size, noise_type, noisy_bit):
+def matrix_to_list(matrix, label_name, size, noise_type, noisy_bit, label_pattern):
     """Generates a list of images from a matrix of column vectors. Each image
     corresponds to each column vector of the matrix. The images are stored in
     the directory path "simulation/recall/".
@@ -209,6 +209,9 @@ def matrix_to_list(matrix, label_name, size, noise_type, noisy_bit):
             Type of noise used to distort the image.
         noisy_bit::int
             Number of image pixels used to distort the image with noise.
+        label_pattern::str(= "X" or "Y")
+            Label used to generate the name of the image, which corresponds to
+            input/output pattern.
 
     Returns:
         list_images::list of str
@@ -227,7 +230,7 @@ def matrix_to_list(matrix, label_name, size, noise_type, noisy_bit):
         image = 255 * array[:, index].reshape(size)
         image = Image.fromarray(np.uint8(image))
 
-        path = os.path.join(paths_directories["recall_pattern"], "X" + str(index) \
+        path = os.path.join(paths_directories["recall_pattern"], label_pattern + str(index) \
                 + "_" + noise_type + "_" + str(noisy_bit) + "_pixels_" \
                 + label_name + ".bmp")
 
@@ -280,16 +283,16 @@ def similarity_list(list_x, list_y):
 
     similarity = []
 
-    for (filename_x,filename_y) in zip(list_x ,list_y):
+    for (filename_x, filename_y) in zip(list_x, list_y):
         image_x = Image.open(filename_x)
         image_y = Image.open(filename_y)
 
-        image_x = np.array(image_x, dtype=np.uint8) / 255
-        image_y = np.array(image_y, dtype=np.uint8) / 255
+        image_x = np.array(image_x, dtype = np.uint8) / 255
+        image_y = np.array(image_y, dtype = np.uint8) / 255
 
         dividend = np.sum(np.absolute(np.subtract(image_x, image_y)))
         divisor = image_x.shape[0] * image_x.shape[0]
-        result = abs(1 - (2 * dividend / divisor))
+        result = abs(1 - (2 * (dividend / divisor)))
         similarity.append(float(result))
 
     return similarity
@@ -329,7 +332,7 @@ def convert_image_to_grid(scale, invert = False):
                 image = Image.fromarray(matrix.astype(np.uint8))
                 image.save(filename)
 
-def create_excel(name_memory, number_of_pattern, noise_type, recall_result, perfect_recall_pattern):
+def create_excel(name_memory, number_of_pattern, noise_type, noisy_pixel, recall_result, perfect_recall_pattern):
     """Generates excel file with simulations result.
 
     Args:
@@ -339,6 +342,8 @@ def create_excel(name_memory, number_of_pattern, noise_type, recall_result, perf
             Number of pattern stored in associative memory.
         noise_type::str(= "additive", "subtractive" or "mixed")
             Type of noise used to distort the image.
+        noisy_pixel::int
+            Number of distroted pixels in binary images
         recall_result::array object
             Array object where the recall result by associativa memories
             are stored.
@@ -366,7 +371,7 @@ def create_excel(name_memory, number_of_pattern, noise_type, recall_result, perf
 
     worksheet2.write("A1", "Memory", bold)
     worksheet2.write("B1", "Noise", bold)
-    worksheet2.write("C1", "Noisy pixeles", bold)
+    worksheet2.write("C1", "Noisy pixels", bold)
     worksheet2.write("D1", "Perfect recall patterns", bold)
     worksheet2.write("E1", "% rate perfect recall", bold)
 
@@ -377,11 +382,11 @@ def create_excel(name_memory, number_of_pattern, noise_type, recall_result, perf
         for r in range(2):
             worksheet1.write(1 + 2 * indexmemory + r, 0, associative_memories[valmemory]["name"])
             worksheet1.write(1 + 2 * indexmemory + r, 1, noise_type)
-            worksheet1.write(1 + 2 * indexmemory + r, 2, r)
+            worksheet1.write(1 + 2 * indexmemory + r, 2, r * noisy_pixel)
 
             worksheet2.write(1 + 2 * indexmemory + r, 0, associative_memories[valmemory]["name"])
             worksheet2.write(1 + 2 * indexmemory + r, 1, noise_type)
-            worksheet2.write(1 + 2 * indexmemory + r, 2, r)
+            worksheet2.write(1 + 2 * indexmemory + r, 2, r * noisy_pixel)
 
             worksheet2.write(1 + 2 * indexmemory + r, 3, perfect_recall_pattern[indexmemory][r])
             worksheet2.write(1 + 2 * indexmemory + r, 4, (perfect_recall_pattern[indexmemory][r]) / number_of_pattern * 100)
